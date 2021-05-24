@@ -134,6 +134,19 @@ void EQpluginAudioProcessorEditor::resized()
 
 }
 
+void EQpluginAudioProcessorEditor::parameterValueChanged(int parameterIndex, float newValue)
+{
+    parametersChanged.set(true);
+}
+
+void EQpluginAudioProcessorEditor::timerCallback()
+{
+    if( parametersChanged.compareAndSetBool(false, true) )
+    {
+        
+    }
+}
+
 std::vector<juce::Component*> EQpluginAudioProcessorEditor::getComps()
 {
     return
