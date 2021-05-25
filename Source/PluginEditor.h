@@ -19,7 +19,6 @@ struct LookAndFeel : juce::LookAndFeel_V4
                                    float rotaryStartAngle,
                                    float rotaryEndAngle,
                                     juce::Slider&) override;
-    
 };
 
 struct RotarySliderLabeled : juce::Slider
@@ -36,9 +35,9 @@ struct RotarySliderLabeled : juce::Slider
     
     void paint(juce::Graphics& g) override;
     juce::Rectangle<int> getSliderBounds() const;
-    int getTextHight() const { return 14; };
+    int getTextHeight() const { return 14; };
     juce::String getDisplayString() const;
-    
+
     
 private:
     LookAndFeel lnf;
