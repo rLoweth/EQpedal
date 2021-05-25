@@ -29,26 +29,44 @@ void LookAndFeel::drawRotarySlider(juce::Graphics & g,
     g.setColour(Colour(255u, 154u, 1u));
     g.drawEllipse(bounds, 1.f);
     
-    auto center = bounds.getCentre();
-    
-    Path p;
-    
-    Rectangle<float> r;
-    
-    r.setLeft(center.getX() -2);
-    r.setRight(center.getX() -2);
-    r.setTop(bounds.getY());
-    r.setBottom(center.getY());
-    
-    p.addRectangle(r);
-    
-    jassert(rotaryStartAngle < rotaryEndAngle);
-    
-    auto sliderAngRad = jmap(sliderPosProportional, 0.f, 1.f, rotaryStartAngle, rotaryEndAngle);
-    
-    p.applyTransform(AffineTransform().rotated(sliderAngRad, center.getX(), center.getY()));
-    
-    g.fillPath(p);
+    if( auto* rswl = dynamic_cast<RotarySliderLabeled*>(&slider))
+    {
+        auto center = bounds.getCentre();
+        
+        Path p;
+        
+        Rectangle<float> r;
+        
+        r.setLeft(center.getX() -2);
+        r.setRight(center.getX() -2);
+        r.setTop(bounds.getY());
+        r.setBottom(center.getY() - rswl->getTextHeight() * 1.5);
+        
+        p.addRoundedRectangle(r, 2.f);
+        
+        jassert(rotaryStartAngle < rotaryEndAngle);
+        
+        auto sliderAngRad = jmap(sliderPosProportional, 0.f, 1.f, rotaryStartAngle, rotaryEndAngle);
+        
+        p.applyTransform(AffineTransform().rotated(sliderAngRad, center.getX(), center.getY()));
+        
+        g.fillPath(p);
+        
+        g.setFont(rswl->getTextHeight());
+        
+        auto text = rswl->getDisplayString();
+        auto strWidth = g.getCurrentFont().getStringWidth(text);
+        
+        r.setSize(strWidth + 4, rswl->getTextHeight() +2);
+        r.setCentre(bounds.getCentre());
+        
+        g.setColour(Colours::black);
+        g.fillRect(r);
+        
+        g.setColour(Colours::white);
+        g.drawFittedText(text, r.toNearestInt(), juce::Justification::centred, 1);
+        
+    }
     
 }
 
@@ -64,10 +82,10 @@ void RotarySliderLabeled::paint(juce::Graphics &g)
     
     auto sliderBounds = getSliderBounds();
     
-    g.setColour(Colours::red);
-    g.drawRect(getLocalBounds());
-    g.setColour(Colours::yellow);
-    g.drawRect(sliderBounds);
+    //g.setColour(Colours::red);
+    //g.drawRect(getLocalBounds());
+    //g.setColour(Colours::yellow);
+    //g.drawRect(sliderBounds);
     
     getLookAndFeel().drawRotarySlider(g,
                                       sliderBounds.getX(),
@@ -78,11 +96,37 @@ void RotarySliderLabeled::paint(juce::Graphics &g)
                                       startAng,
                                       endAng,
                                       *this);
+    
+    auto center = sliderBounds.toFloat().getCentre();
+    auto radius = sliderBounds.getWidth() * 0.5f;
+    
+    g.setColour(Colour(0u, 172u, 1u));
+    g.setFont(getTextHeight());
+    
+    auto numChoices = labels.size();
+    for( int i = 0; i < numChoices; ++i )
+    {
+        auto pos = labels[1].pos;
+        jassert(0.f <= pos);
+        jassert(pos <= 1.f);
+        
+        auto ang = jmap(pos, 0.f, 1.f, startAng, endAng);
+        
+        auto c = center.getPointOnCircumference(radius + getTextHeight() * 0.5f + 1, ang);
+        
+        Rectangle<float> r;
+        auto str = labels[i].label;
+        r.setSize(g.getCurrentFont().getStringWidth(str), getTextHeight());
+        r.setCentre(c);
+        r.setY(r.getY() + getTextHeight());
+        
+        g.drawFittedText(str, r.toNearestInt(), juce::Justification::centred, 1);
+    }
+    
 }
 
 juce::Rectangle<int> RotarySliderLabeled::getSliderBounds() const
 {
-    //return getLocalBounds();
     
     auto bounds = getLocalBounds();
     auto size = juce::jmin(bounds.getWidth(), bounds.getHeight());
@@ -96,6 +140,44 @@ juce::Rectangle<int> RotarySliderLabeled::getSliderBounds() const
     return r;
     
 }
+
+juce::String RotarySliderLabeled::getDisplayString() const
+{
+    if( auto* choiceParam = dynamic_cast<juce::AudioParameterChoice*>(param) )
+        return choiceParam->getCurrentChoiceName();
+    
+    juce::String str;
+    bool addK = false;
+    
+    if( auto* floatParam = dynamic_cast<juce::AudioParameterFloat*>(param) )
+    {
+        float val = getValue();
+        
+        if( val > 999.f )
+        {
+            val /= 1000.f;
+            addK = true;
+        }
+        
+        str = juce::String(val, (addK ? 2 : 0));
+    }
+    else
+    {
+        jassertfalse;
+    }
+    
+    if( suffix.isNotEmpty() )
+    {
+        str << " ";
+        if( addK )
+            str << "k";
+        
+        str << suffix;
+    }
+    
+    return str;
+}
+
 
 ResponseCurveComponent::ResponseCurveComponent(EQpluginAudioProcessor& p) : audioProcessor(p)
 {
