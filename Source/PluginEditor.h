@@ -23,7 +23,7 @@ struct LookAndFeel : juce::LookAndFeel_V4
 
 struct RotarySliderLabeled : juce::Slider
 {
-    RotarySliderLabeled(juce::RangedAudioParameter& rap, const juce::String& unitSuffix) : juce::Slider(juce::Slider::SliderStyle::RotaryHorizontalVerticalDrag, juce::Slider::TextEntryBoxPosition::NoTextBox),param(&rap), suffix(unitSuffix)
+    RotarySliderLabeled(juce::RangedAudioParameter& rap, const juce::String& unitSuffix) : juce::Slider(juce::Slider::SliderStyle::RotaryHorizontalVerticalDrag, juce::Slider::TextEntryBoxPosition::NoTextBox), param(&rap), suffix(unitSuffix)
     {
         setLookAndFeel(&lnf);
     }
@@ -70,6 +70,8 @@ struct ResponseCurveComponent: juce::Component, juce::AudioProcessorParameter::L
 private:
     EQpluginAudioProcessor& audioProcessor;
     juce::Atomic<bool> parametersChanged { false };
+    
+    void updateChain();
     
     MonoChain monoChain;
 };
