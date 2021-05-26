@@ -178,13 +178,17 @@ juce::String RotarySliderLabeled::getDisplayString() const
 }
 
 
-ResponseCurveComponent::ResponseCurveComponent(EQpluginAudioProcessor& p) : audioProcessor(p)
+ResponseCurveComponent::ResponseCurveComponent(EQpluginAudioProcessor& p) : audioProcessor(p), leftChannelFifo(&audioProcessor.leftChannelFifo)
 {
     const auto& params = audioProcessor.getParameters();
     for( auto param : params )
     {
         param->addListener(this);
     }
+    
+    leftChannelFFTDataGenerator.changeOrder(FFTOrder::order2048);
+    monoBuffer.setSize(1, leftChannelFFTDataGenerator.getFFTSize());
+    
     
     updateChain();
     
@@ -207,6 +211,23 @@ void ResponseCurveComponent::parameterValueChanged(int parameterIndex, float new
 
 void ResponseCurveComponent::timerCallback()
 {
+    juce::AudioBuffer<float> tempIncomingBuffer;
+    
+    while( leftChannelFifo->getNumCompleteBuffersAvailable() > 0 )
+    {
+        if( leftChannelFifo->getAudioBuffer(tempIncomingBuffer) )
+        {
+            auto size = tempIncomingBuffer.getNumSamples();
+            
+            juce::FloatVectorOperations::copy(monoBuffer.getWritePointer(0, 0), monoBuffer.getReadPointer(0, size), monoBuffer.getNumSamples() - size);
+            
+            juce::FloatVectorOperations::copy(monoBuffer.getWritePointer(0, monoBuffer.getNumSamples() - size), tempIncomingBuffer.getReadPointer(0, 0), size);
+            
+            leftChannelFFTDataGenerator.produceFFTDataForRendering(monoBuffer, -48);
+            
+        }
+    }
+    
     if( parametersChanged.compareAndSetBool(false, true) )
     {
 
@@ -405,6 +426,15 @@ void ResponseCurveComponent::resized()
             
             g.setColour(gDb == 0.f ? Colour(0u, 172u, 1u) : Colours::lightgrey);
             
+            g.drawFittedText(str, r, juce::Justification::centred, 1);
+            
+            str.clear();
+            str << (gDb - 24.f);
+            
+            r.setX(1);
+            textWidth = g.getCurrentFont().getStringWidth(str);
+            r.setSize(textWidth, fontHeight);
+            g.setColour(Colours::lightgrey);
             g.drawFittedText(str, r, juce::Justification::centred, 1);
         }
     }
