@@ -381,6 +381,40 @@ void ResponseCurveComponent::paint (juce::Graphics& g)
     
 }
 
+void LookAndFeel::drawToggleButton(juce::Graphics &g,
+                                   juce::ToggleButton &toggleButton,
+                                   bool shouldDrawButtonAsHighlighted,
+                                   bool shouldDrawButtonAsDown)
+{
+    using namespace juce;
+    
+    Path powerButton;
+    
+    auto bounds = toggleButton.getLocalBounds();
+    auto size = jmin(bounds.getWidth(), bounds.getHeight()) - 6;
+    auto r = bounds.withSizeKeepingCentre(size, size).toFloat();
+    
+    float ang = 30.f;
+    
+    size -= 6;
+    
+    powerButton.addCentredArc(r.getCentreX(), r.getCentreY(), size * 0.5, 0.f, degreesToRadians(ang), degreesToRadians(360 - ang), true);
+    
+    powerButton.startNewSubPath(r.getCentreX(), r.getY());
+    powerButton.lineTo(r.getCentre());
+
+    PathStrokeType pst(2.f, PathStrokeType::JointStyle::curved);
+    
+    auto color = toggleButton.getToggleState() ? Colours::dimgrey : Colour(0u, 172u, 1u);
+    
+    g.setColour(color);
+    
+    g.strokePath(powerButton, pst);
+    
+    g.drawEllipse(r, 2);
+}
+
+
 void ResponseCurveComponent::resized()
 {
     using namespace juce;
@@ -571,12 +605,19 @@ analyzerEnabledButtonAttachment(audioProcessor.apvts, "Analyzer Enabled", analyz
         addAndMakeVisible(comp);
     }
     
+    peakBypassButton.setLookAndFeel(&lnf);
+    lowcutBypassButton.setLookAndFeel(&lnf);
+    highcutBypassButton.setLookAndFeel(&lnf);
+    
     setSize (600, 480);
 }
 
 EQpluginAudioProcessorEditor::~EQpluginAudioProcessorEditor()
 {
-    
+    peakBypassButton.setLookAndFeel(nullptr);
+    highcutBypassButton.setLookAndFeel(nullptr);
+    lowcutBypassButton.setLookAndFeel(nullptr);
+    analyzerEnabledButton.setLookAndFeel(nullptr);
 }
 
 //==============================================================================
